@@ -1,0 +1,25 @@
+
+-----------MASTER---------------
+Pinout & Configuration
+PA10: GPIO_INPUT
+PB8: GPIO_INPUT
+PA2: USART2_TX
+PA3: USART2_RX
+PA4: USART2_CK
+
+Clock Configuration
+PLL Source Mux: HSI
+System Clock Mux: PLLCLK
+
+-----------SLAVE---------------
+Pinout & Configuration
+PA1: GPIO_OUTPUT
+PB8: GPIO_OUTPUT
+PA2: USART2_TX
+PA3: USART2_RX
+PA4: USART2_CK
+
+
+Clock Configuration
+PLL Source Mux: HSI
+System Clock Mux: PLLCLK
