@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdbool.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,25 +40,23 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-USART_HandleTypeDef husart2;
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+float receivedData; // Buffer to hold received float data
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_USART2_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-bool motion_detected = false;  // To store motion sensor value
-double temperature = 0.0;      // To store temperature value
-uint8_t received_data[50];     // Buffer to store received USART data
+
 /* USER CODE END 0 */
 
 /**
@@ -90,7 +88,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -99,14 +97,20 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if (HAL_UART_Receive(&huart2, (uint8_t *)&receivedData, sizeof(receivedData), HAL_MAX_DELAY) == HAL_OK)
+	      {
+	        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET); // Turn on LED on PA1 upon successful reception
+	      }
+    if (HAL_UART_Receive(&huart2, (uint8_t *)&receivedData, sizeof(receivedData), HAL_MAX_DELAY) == HAL_OK)
+    {
+      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1); // Toggle LED on PA1 upon successful reception
+    }
     /* USER CODE END WHILE */
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);
-	  HAL_DELAY(500);
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
-
 /**
   * @brief System Clock Configuration
   * @retval None
@@ -158,7 +162,7 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-static void MX_USART2_Init(void)
+static void MX_USART2_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART2_Init 0 */
@@ -168,16 +172,15 @@ static void MX_USART2_Init(void)
   /* USER CODE BEGIN USART2_Init 1 */
 
   /* USER CODE END USART2_Init 1 */
-  husart2.Instance = USART2;
-  husart2.Init.BaudRate = 9600;
-  husart2.Init.WordLength = USART_WORDLENGTH_8B;
-  husart2.Init.StopBits = USART_STOPBITS_1;
-  husart2.Init.Parity = USART_PARITY_NONE;
-  husart2.Init.Mode = USART_MODE_RX;
-  husart2.Init.CLKPolarity = USART_POLARITY_LOW;
-  husart2.Init.CLKPhase = USART_PHASE_1EDGE;
-  husart2.Init.CLKLastBit = USART_LASTBIT_DISABLE;
-  if (HAL_USART_Init(&husart2) != HAL_OK)
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -205,16 +208,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1|LD2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1|GPIO_PIN_8, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : B1_Pin */
-  GPIO_InitStruct.Pin = B1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA1 LD2_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|LD2_Pin;
+  /*Configure GPIO pins : PA1 PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -225,27 +222,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-/**
- * Parses temperature and motion data from Master
- * Master sends: M:(1 or 0),T:(decimal val)\n
- */
-void parse_data(uint8_t* data) {
-    char* token;
 
-    // Tokenize on comma
-    token = strtok((char*)data, ",");
-    while (token != NULL) {
-        if (token[0] == 'M') {
-            // Parse motion sensor value
-            motion_detected = (token[2] == '1');  // '1' -> true, '0' -> false
-        } else if (token[0] == 'T') {
-            // Parse temperature value
-            temperature = atof(&token[2]);  // Convert string to double
-        }
-
-        token = strtok(NULL, ",");  // Get next token
-    }
-}
 /* USER CODE END 4 */
 
 /**
@@ -255,7 +232,6 @@ void parse_data(uint8_t* data) {
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1)
   {
