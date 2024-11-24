@@ -1,3 +1,5 @@
 # ECE198-FRAILS
 
 November 24: Added buzzer code and design change.
+
+November 24: Added UART code
