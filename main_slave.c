@@ -117,17 +117,19 @@ int main(void)
       button_pressed = false;
     }
 
-    // Alarm state behavior
+      // Alarm state behavior
     if (alarm_state)
     {
-      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);              // Toggle buzzer
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET); // Turn on LED
+      // Flash the LED
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_8);  // Toggle LED
+      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);  // Toggle buzzer
       HAL_Delay(500);
     }
     else
     {
-      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET); // Stop buzzer
+      // Turn off LED and buzzer
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET); // Turn off LED
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET); // Stop buzzer
     }
 
     // UART-based click handling
