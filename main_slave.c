@@ -40,7 +40,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-USART_HandleTypeDef husart2;
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
@@ -49,16 +49,14 @@ USART_HandleTypeDef husart2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_USART2_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-bool motion_detected = false;  // To store motion sensor value
-double temperature = 0.0;      // To store temperature value
-uint8_t received_data[50];     // Buffer to store received USART data
+
 /* USER CODE END 0 */
 
 /**
@@ -69,7 +67,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -90,22 +87,58 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  bool alarm_state = false;
+  bool button_pressed = false; // Flag to detect button press
+
   while (1)
   {
-    /* USER CODE END WHILE */
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);
-	  HAL_DELAY(500);
-    /* USER CODE BEGIN 3 */
+	  //Check for state toggle
+      if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9)) // Button is pressed
+      {
+          if (!button_pressed) // Detect a new button press
+          {
+              button_pressed = true;          // Mark button as pressed
+              if(alarm_state){ //If in armed state
+            	  alarm_state = false;     // Disable alarm state
+              }
+          }
+      }
+      else
+      {
+          button_pressed = false; // Reset the flag when button is released
+          //GET UART READING
+          //if( ) alarm_state = true;
+      }
+
+      //Alarm state behaviour
+      if (alarm_state)
+      {
+          // Buzzer sound
+          HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);
+          HAL_Delay(500);
+          // LED lit
+          HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
+      }
+      else
+      {
+          // Stop buzzer
+          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+          // Turn off LED
+          HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
+      }
   }
-  /* USER CODE END 3 */
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
 }
+  /* USER CODE END 3 */
 
 /**
   * @brief System Clock Configuration
@@ -158,7 +191,7 @@ void SystemClock_Config(void)
   * @param None
   * @retval None
   */
-static void MX_USART2_Init(void)
+static void MX_USART2_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART2_Init 0 */
@@ -168,16 +201,15 @@ static void MX_USART2_Init(void)
   /* USER CODE BEGIN USART2_Init 1 */
 
   /* USER CODE END USART2_Init 1 */
-  husart2.Instance = USART2;
-  husart2.Init.BaudRate = 9600;
-  husart2.Init.WordLength = USART_WORDLENGTH_8B;
-  husart2.Init.StopBits = USART_STOPBITS_1;
-  husart2.Init.Parity = USART_PARITY_NONE;
-  husart2.Init.Mode = USART_MODE_RX;
-  husart2.Init.CLKPolarity = USART_POLARITY_LOW;
-  husart2.Init.CLKPhase = USART_PHASE_1EDGE;
-  husart2.Init.CLKLastBit = USART_LASTBIT_DISABLE;
-  if (HAL_USART_Init(&husart2) != HAL_OK)
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -207,6 +239,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1|LD2_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
+
   /*Configure GPIO pin : B1_Pin */
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -220,32 +255,25 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PB8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
-/**
- * Parses temperature and motion data from Master
- * Master sends: M:(1 or 0),T:(decimal val)\n
- */
-void parse_data(uint8_t* data) {
-    char* token;
 
-    // Tokenize on comma
-    token = strtok((char*)data, ",");
-    while (token != NULL) {
-        if (token[0] == 'M') {
-            // Parse motion sensor value
-            motion_detected = (token[2] == '1');  // '1' -> true, '0' -> false
-        } else if (token[0] == 'T') {
-            // Parse temperature value
-            temperature = atof(&token[2]);  // Convert string to double
-        }
-
-        token = strtok(NULL, ",");  // Get next token
-    }
-}
 /* USER CODE END 4 */
 
 /**
