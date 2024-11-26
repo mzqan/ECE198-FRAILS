@@ -5,11 +5,13 @@ PA10: GPIO_INPUT
 PB8: GPIO_INPUT
 PA2: USART2_TX
 PA3: USART2_RX
-PA4: USART2_CK
 
 Clock Configuration
 PLL Source Mux: HSI
 System Clock Mux: PLLCLK
+
+UART Configuration
+Baud rate: 115200 
 
 -----------SLAVE---------------
 Pinout & Configuration
@@ -18,9 +20,10 @@ PB8: GPIO_OUTPUT
 PB9: GPIO_INPUT
 PA2: USART2_TX
 PA3: USART2_RX
-PA4: USART2_CK
-
 
 Clock Configuration
 PLL Source Mux: HSI
 System Clock Mux: PLLCLK
+
+UART Configuration
+Baud rate: 115200 bps
