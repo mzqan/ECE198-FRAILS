@@ -117,7 +117,7 @@ int main(void)
       button_pressed = false;
     }
 
-      // Alarm state behavior
+    // Alarm state behavior
     if (alarm_state)
     {
       // Flash the LED
@@ -131,6 +131,7 @@ int main(void)
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET); // Turn off LED
       HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET); // Stop buzzer
     }
+
 
     // UART-based click handling
     if (isClicked == 1)
